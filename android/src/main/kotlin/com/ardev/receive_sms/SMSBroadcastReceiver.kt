@@ -21,7 +21,7 @@ class SMSBroadcastReceiver: BroadcastReceiver() {
         if (intent.action == SmsRetriever.SMS_RETRIEVED_ACTION) {
             val extras = intent.extras!!
             val status = extras.get(SmsRetriever.EXTRA_STATUS) as Status
-            Log.d("FLUTTER-SMS-RECEIVER", status.toString())
+            Log.d("receiveSms", status.toString())
             when (status.statusCode) {
                 CommonStatusCodes.SUCCESS -> {
                     val message = extras.get(SmsRetriever.EXTRA_SMS_MESSAGE) as String

@@ -80,8 +80,8 @@ class ReceiveSmsPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             removeListener -> {
                 var resultStopListening = stopListening()
                 when(resultStopListening){
-                    true-> Log.d("stopListening","Stop Listening True")
-                    false-> Log.d("stopListening","Stop Listening False")
+                    true-> Log.d("receiveSms","Stop Listening True")
+                    false-> Log.d("receiveSms","Stop Listening False")
                 }
             }
             listenerOTPCode -> {
@@ -156,6 +156,7 @@ class ReceiveSmsPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             activity?.unregisterReceiver(smsBroadcastReceiver)
             return true
         } catch (e: Exception) {
+            Log.d("receiveSms","${e.message}")
             // Ignored
             return false
         }
