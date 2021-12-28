@@ -17,6 +17,7 @@ import com.oval.sms_receiver.SMSBroadcastReceiver
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.EventChannel
+import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.lang.Exception
 import java.lang.ref.WeakReference
 
@@ -78,13 +79,15 @@ class ReceiveSmsPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                 result.success(appSignature)
             }
             removeListener -> {
-                var resultStopListening = stopListening()
+//                var resultStopListening = stopListening()
+                var resultStopListening = unregisterListener()
                 when(resultStopListening){
                     true-> Log.d("receiveSms","Stop Listening True")
                     false-> Log.d("receiveSms","Stop Listening False")
                 }
             }
             listenerOTPCode -> {
+                Log.d("receiveSms","listener otp code")
                 //                final String smsCodeRegexPattern = call.argument("smsCodeRegexPattern");
                 val client = SmsRetriever.getClient(activity!!)
                 val task = client.startSmsRetriever()
@@ -93,7 +96,7 @@ class ReceiveSmsPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 //                        unregisterReceiver();// unregister existing receiver
 //                        broadcastReceiver = new SmsBroadcastReceiver(new WeakReference<>(SmsAutoFillPlugin.this),
 //                                smsCodeRegexPattern);
-
+                    Log.d("receiveSms","task on success")
                     broadcastReceiver =
                         SMSBroadcastReceiverV2(WeakReference<ReceiveSmsPlugin>(this@ReceiveSmsPlugin))
                     activity!!.registerReceiver(
@@ -103,6 +106,7 @@ class ReceiveSmsPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                     result.success(null)
                 }
                 task.addOnFailureListener {
+                    Log.d("receiveSms","task on failure")
                     result.error(
                         "ERROR_START_SMS_RETRIEVER",
                         "Can't start sms retriever",
@@ -114,12 +118,34 @@ class ReceiveSmsPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         }
     }
 
+    private fun unregisterListener(): Boolean{
+        if (broadcastReceiver != null)
+        {
+            try {
+                activity!!.unregisterReceiver(broadcastReceiver)
+
+                Log.d("sms_autofill", "success unregister")
+                return true
+            } catch (ex: Exception) {
+                Log.d("sms_autofill", "failed unregister")
+                return false
+                // silent catch to avoir crash if receiver is not registered
+            }
+            broadcastReceiver = null
+        }
+        return true
+    }
+
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+        unregisterListener()
         channel.setMethodCallHandler(null)
+
     }
 
     fun setCode(code: String?) {
-        channel.invokeMethod(smsCode, code)
+        var otpCode:String = getOtpMessage(code)
+        Log.d("sms_autofill", "set code")
+        channel.invokeMethod(smsCode, otpCode)
     }
 
 //    private fun registerReceiver() {
@@ -154,9 +180,10 @@ class ReceiveSmsPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     private fun stopListening():Boolean {
         try {
             activity?.unregisterReceiver(smsBroadcastReceiver)
+            Log.d("receiveSms","true listening")
             return true
         } catch (e: Exception) {
-            Log.d("receiveSms","${e.message}")
+            Log.d("receiveSms","error ${e.message}")
             // Ignored
             return false
         }
@@ -186,6 +213,8 @@ class ReceiveSmsPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         retriever.addOnFailureListener {
             stopListening()
         }
+
+
     }
 
 
@@ -211,6 +240,7 @@ class ReceiveSmsPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
+        unregisterListener()
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
@@ -218,6 +248,7 @@ class ReceiveSmsPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onDetachedFromActivity() {
+        unregisterListener()
     }
 
 //  override fun onAttachedToActivity(binding: ActivityPluginBinding) {

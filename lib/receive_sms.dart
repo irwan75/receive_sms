@@ -3,9 +3,8 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 class ReceiveSms {
-  ReceiveSms._privateConstructor();
 
-  static final ReceiveSms _instance = ReceiveSms._privateConstructor();
+  static final ReceiveSms _instance = ReceiveSms._();
 
   static ReceiveSms get getInstance => _instance;
 
@@ -20,6 +19,10 @@ class ReceiveSms {
   static const EventChannel _messageChannel = EventChannel(_eventChannel);
 
   final StreamController<String> _code = StreamController.broadcast();
+  
+  ReceiveSms._() {
+    _channel.setMethodCallHandler(_didReceive);
+  }
 
   Future<void> _didReceive(MethodCall method) async {
     if (method.method == _smsCode) {
@@ -27,14 +30,14 @@ class ReceiveSms {
     }
   }
 
-  static Future<bool> get listenerRemove async {
-    final bool? isRemoveListener = await _channel.invokeMethod(_removeListener);
-    return isRemoveListener ?? false;
+  Stream<String> get code => _code.stream;
+
+  Future<void> listenerRemove() async {
+    await _channel.invokeMethod(_removeListener);
   }
 
-  static Future<String> get listenerOtpCode async {
-    final String? listener = await _channel.invokeMethod(_listenerOTPCode);
-    return listener ?? "";
+  Future<void> listenerOtpCode() async {
+    await _channel.invokeMethod(_listenerOTPCode);
   }
 
   static Future<String?> get getAppSignature async {
@@ -54,4 +57,30 @@ class ReceiveSms {
   // return _magneticEvent!;
   // }
 
+}
+
+
+mixin CodeAutoFill {
+  final ReceiveSms _autoFill = ReceiveSms.getInstance;
+  String? code;
+  StreamSubscription? _subscription;
+
+  void listenForCode() {
+    _subscription = _autoFill.code.listen((code) {
+      this.code = code;
+      codeUpdated();
+    });
+    _autoFill.listenerOtpCode();
+  }
+
+  Future<void> cancel() async {
+    return _subscription?.cancel();
+  }
+
+  Future<void> unregisterListener() {
+    _subscription?.cancel();
+    return _autoFill.listenerRemove();
+  }
+
+  void codeUpdated();
 }

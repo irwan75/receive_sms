@@ -16,28 +16,30 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
-  late StreamSubscription _streamSubscription;
+class _MyAppState extends State<MyApp> with CodeAutoFill {
+  // late StreamSubscription _streamSubscription;
   String _platformVersion = 'Unknown';
 
   @override
   void initState() {
     super.initState();
     initPlatformState();
+    listenForCode();
+    // _onListenDataOtp();
   }
 
-  void _onListenDataOtp() {
-    _streamSubscription = ReceiveSms.listenerDataOtp.listen((event) {
-      setState(() {
-        if (kDebugMode) {
-          print(event.runtimeType);
-          print(event);
-        }
-        
-        // sensorValues = <double>[event.x, event.y, event.z];
-      });
-    });
-  }
+  // void _onListenDataOtp() {
+  //   _streamSubscription = ReceiveSms.listenerDataOtp.listen((event) {
+  //     setState(() {
+  //       if (kDebugMode) {
+  //         print(event.runtimeType);
+  //         print(event);
+  //       }
+
+  //       // sensorValues = <double>[event.x, event.y, event.z];
+  //     });
+  //   });
+  // }
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
@@ -59,9 +61,9 @@ class _MyAppState extends State<MyApp> {
     // setState to update our non-existent appearance.
     if (!mounted) return;
 
-    setState(() {
-      _platformVersion = platformVersion;
-    });
+    // setState(() {
+    //   _platformVersion = platformVersion;
+    // });
   }
 
   @override
@@ -77,23 +79,21 @@ class _MyAppState extends State<MyApp> {
           children: [
             Text('Running on: $_platformVersion\n'),
             ElevatedButton(
-              onPressed: () {
-                _onListenDataOtp();
-              },
+              onPressed: () =>listenForCode(),
               child: const Text("Click Listen"),
             ),
             ElevatedButton(
-              onPressed: () async{
-                bool checkResult = await ReceiveSms.listenerRemove;
-                if (kDebugMode) {
-                  print("check result $checkResult");
-                } 
-              },
+              onPressed: () => unregisterListener(),
               child: const Text("Remove Listener"),
             ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void codeUpdated() {
+    print("this code $code");
   }
 }
